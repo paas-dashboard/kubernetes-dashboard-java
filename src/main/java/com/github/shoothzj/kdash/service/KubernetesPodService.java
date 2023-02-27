@@ -23,6 +23,8 @@ import com.github.shoothzj.kdash.module.CreatePodParam;
 import com.github.shoothzj.kdash.module.GetPodResp;
 import com.github.shoothzj.kdash.module.ResourceReq;
 import com.github.shoothzj.kdash.util.KubernetesUtil;
+import com.google.common.io.CharStreams;
+import io.kubernetes.client.Exec;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -34,9 +36,13 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Yaml;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class KubernetesPodService {
 
     private static String jsonStr = "["
@@ -59,6 +66,8 @@ public class KubernetesPodService {
     private final CoreV1Api coreV1Api;
 
     private final AppsV1Api appsV1Api;
+
+    private static final Exec exec = new Exec();
 
     public KubernetesPodService(@Autowired ApiClient apiClient) {
         this.coreV1Api = new CoreV1Api(apiClient);
@@ -168,5 +177,16 @@ public class KubernetesPodService {
         } else {
             throw new Exception(kind + " type changes are not supported.");
         }
+    }
+
+    public String execCommand(String namespace, String podName, String commandStr)
+            throws IOException, ApiException {
+        String[] command = commandStr.split(" ");
+        if (command.length == 0) {
+            log.warn("empty command!");
+            return "";
+        }
+        final Process process = exec.exec(namespace, podName, command, true, true);
+        return CharStreams.toString(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
     }
 }

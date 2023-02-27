@@ -22,6 +22,7 @@ package com.github.shoothzj.kdash.controller;
 import com.github.shoothzj.kdash.module.BaseReqType;
 import com.github.shoothzj.kdash.module.CreatePodReq;
 import com.github.shoothzj.kdash.module.GetPodResp;
+import com.github.shoothzj.kdash.module.PodCommandExecutionReq;
 import com.github.shoothzj.kdash.module.ResourceReq;
 import com.github.shoothzj.kdash.service.KubernetesPodService;
 import io.kubernetes.client.openapi.ApiException;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -83,6 +85,15 @@ public class KubernetesPodController {
                                                @RequestBody ResourceReq req) throws Exception {
         kubernetesPodService.updateResource(namespace, podName, kind, req);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PostMapping("/namespace/{namespace}/pods/{podName}/execCommand")
+    public ResponseEntity<String> execCommand(@PathVariable String namespace,
+                                              @PathVariable String podName,
+                                              @RequestBody PodCommandExecutionReq req)
+            throws IOException, ApiException {
+        return new ResponseEntity<>(kubernetesPodService.execCommand(namespace, podName, req.getCommand()),
+                HttpStatus.OK);
     }
 
 }
